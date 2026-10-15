@@ -1,0 +1,103 @@
+<mxfile host="Electron" agent="Codex" version="24.7.17">
+  <diagram id="monitor-system" name="monitor_system 架构">
+    <mxGraphModel adaptiveColors="auto" dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="monitor_system：分布式 Push 性能监控架构" style="text;html=1;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="900" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="worker" value="Worker（每台被监控 Linux 主机）" style="swimlane;startSize=34;fillColor=#e8f4f8;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="580" height="700" as="geometry"/>
+        </mxCell>
+        <mxCell id="kmod" value="&lt;b&gt;内核模块&lt;/b&gt;&lt;br&gt;/dev/cpu_stat_monitor&lt;br&gt;/dev/cpu_softirq_monitor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="worker">
+          <mxGeometry x="30" y="60" width="160" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="proc" value="&lt;b&gt;procfs / sysfs&lt;/b&gt;&lt;br&gt;loadavg · meminfo&lt;br&gt;diskstats · net/dev" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="worker">
+          <mxGeometry x="210" y="60" width="160" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ebpf" value="&lt;b&gt;eBPF TC&lt;/b&gt;&lt;br&gt;ingress / egress&lt;br&gt;BPF Map 计数器" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="worker">
+          <mxGeometry x="390" y="60" width="160" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="collectors" value="&lt;b&gt;MetricCollector&lt;/b&gt;&lt;br&gt;统一调用 MonitorInter::UpdateOnce&lt;br&gt;计算两次采样差值" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="worker">
+          <mxGeometry x="200" y="210" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="proto" value="&lt;b&gt;MonitorInfo&lt;/b&gt;&lt;br&gt;Protobuf 指标快照&lt;br&gt;主机 + CPU + 内存 + 网络 + 磁盘" style="shape=mxgraph.flowchart.document;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="worker">
+          <mxGeometry x="200" y="350" width="180" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="pusher" value="&lt;b&gt;MonitorPusher&lt;/b&gt;&lt;br&gt;独立线程，每 N 秒 Push&lt;br&gt;gRPC Stub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="worker">
+          <mxGeometry x="200" y="510" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="manager" value="Manager（中心管理端）" style="swimlane;startSize=34;fillColor=#fff0e6;strokeColor=#d79b00;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="80" width="820" height="700" as="geometry"/>
+        </mxCell>
+        <mxCell id="receiver" value="&lt;b&gt;GrpcServerImpl&lt;/b&gt;&lt;br&gt;SetMonitorInfo&lt;br&gt;校验并保存最新快照" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="manager">
+          <mxGeometry x="30" y="80" width="170" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="hostmgr" value="&lt;b&gt;HostManager&lt;/b&gt;&lt;br&gt;hostname_ip 标识&lt;br&gt;在线状态与最新数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="manager">
+          <mxGeometry x="240" y="80" width="170" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="analysis" value="&lt;b&gt;指标处理&lt;/b&gt;&lt;br&gt;变化率 + 健康评分&lt;br&gt;60 秒过期清理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="manager">
+          <mxGeometry x="450" y="80" width="170" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="cache" value="最新主机状态&lt;br&gt;unordered_map" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="manager">
+          <mxGeometry x="660" y="80" width="120" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="mysql" value="&lt;b&gt;MySQL monitor_db&lt;/b&gt;&lt;br&gt;性能汇总 + 4 类明细&lt;br&gt;历史时序数据" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="manager">
+          <mxGeometry x="450" y="260" width="170" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="querymgr" value="&lt;b&gt;QueryManager&lt;/b&gt;&lt;br&gt;历史 / 趋势 / 异常&lt;br&gt;评分 / 明细查询" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="manager">
+          <mxGeometry x="240" y="430" width="170" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="querysvc" value="&lt;b&gt;QueryServiceImpl&lt;/b&gt;&lt;br&gt;9 个 gRPC API&lt;br&gt;Protobuf Response" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="manager">
+          <mxGeometry x="30" y="430" width="170" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="client" value="查询客户端 / 调度系统&lt;br&gt;当前仓库未提供正式前端" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="500" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend" value="实线：当前实现的数据流&#xa;虚线节点：外部消费者，仓库内未实现" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="660" width="180" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="kmod" target="collectors" style="html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="proc" target="collectors" style="html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="可选/回退" edge="1" parent="1" source="ebpf" target="collectors" style="html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="collectors" target="proto" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="proto" target="pusher" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="gRPC Push" edge="1" parent="1" source="pusher" target="receiver" style="html=1;endArrow=classic;strokeWidth=2;strokeColor=#6c8ebf;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="同步回调" edge="1" parent="1" source="receiver" target="hostmgr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="hostmgr" target="analysis" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="analysis" target="cache" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10" value="同步 INSERT" edge="1" parent="1" source="analysis" target="mysql" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e11" value="SELECT" edge="1" parent="1" source="mysql" target="querymgr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="querymgr" target="querysvc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e13" value="查询 RPC" edge="1" parent="1" source="client" target="querysvc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=classic;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
